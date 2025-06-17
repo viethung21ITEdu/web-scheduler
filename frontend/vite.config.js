@@ -8,11 +8,16 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@mui/x-date-pickers']
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@mui/x-date-pickers'],
+          maps: ['leaflet', 'react-leaflet'],
+          icons: ['react-icons'],
+          utils: ['axios', 'date-fns', 'prop-types']
         }
       }
     }
