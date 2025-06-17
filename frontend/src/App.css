@@ -1,0 +1,432 @@
+/* filepath: e:\web-doan-third\web-doan-cnpm\src\App.css */
+#root {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  overflow-x: hidden; /* Ngăn scroll ngang trên mobile */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 100%;
+  overflow-x: hidden; /* Ngăn scroll ngang trên mobile */
+  -webkit-text-size-adjust: 100%; /* Ngăn iOS tự động thay đổi font size */
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Các style tùy chỉnh cho trang home */
+.home-container {
+  background-color: #715FFD;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.btn-primary {
+  background-color: white;
+  color: black;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #f3f3f3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-content {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  /* Điều chỉnh font size cho mobile */
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  /* Đảm bảo các button có kích thước phù hợp trên mobile */
+  button, .btn-primary, a.btn-primary {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding: 10px 16px;
+  }
+  
+  /* Điều chỉnh padding cho container */
+  .container, .px-6, .py-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Đảm bảo các form không bị tràn */
+  form, input, select, textarea {
+    max-width: 100%;
+  }
+}
+
+/* Fix cho Safari mobile */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Fix viewport height cho mobile */
+:root {
+  --vh: 1vh;
+}
+
+.h-screen {
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+.min-h-screen {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* ===== MOBILE OPTIMIZATION - CHỈ ÁP DỤNG CHO MOBILE ===== */
+/* Chỉ thêm rules này để fix mobile issues mà không ảnh hưởng desktop */
+
+@media (max-width: 767px) {
+  /* Fix nội dung chồng chập */
+  * {
+    box-sizing: border-box !important;
+  }
+  
+  /* Fix header mobile */
+  header {
+    padding: 0.75rem 1rem !important;
+    min-height: 60px;
+  }
+  
+  /* Fix main content spacing */
+  main {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  /* Fix logo sizing */
+  .logo {
+    height: 3em !important;
+    padding: 0.75em !important;
+  }
+  
+  /* Fix text readability */
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+  }
+  
+  p, span, div {
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Fix button touch targets - NHƯNG KHÔNG PHÓNG TO QUÁ MỨC */
+  button, a[role="button"] {
+    min-height: 44px !important;
+    padding: 8px 12px !important; /* Giảm padding */
+    font-size: 0.875rem !important;
+    margin: 0.25rem 0 !important;
+  }
+  
+  /* Đặc biệt fix cho nút "Tạo nhóm" và các nút tương tự */
+  .btn-primary, button.bg-white, button[class*="bg-white"] {
+    padding: 8px 16px !important; /* Padding vừa phải */
+    font-size: 0.875rem !important;
+    min-height: 40px !important; /* Giảm chiều cao */
+    width: auto !important; /* Không chiếm full width */
+    margin: 0 !important;
+  }
+  
+  /* Fix form elements */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+    padding: 12px 16px !important;
+    min-height: 44px !important;
+  }
+  
+  /* Fix tables */
+  table {
+    font-size: 0.75rem !important;
+  }
+  
+  th, td {
+    padding: 8px 4px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Fix modals */
+  .modal-content, [role="dialog"] {
+    margin: 1rem !important;
+    max-width: calc(100vw - 2rem) !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
+  
+  /* SIDEBAR MOBILE FIXES */
+  /* Ẩn hoàn toàn sidebar khi không mở trên mobile */
+  .fixed.md\\:static {
+    display: none !important;
+  }
+  
+  /* Chỉ hiện sidebar khi được mở */
+  .fixed.md\\:static.translate-x-0 {
+    display: block !important;
+  }
+  
+  /* Ẩn icons sidebar khi thu gọn trên mobile */
+  .w-0 .min-w-6 {
+    display: none !important;
+  }
+  
+  /* Ẩn sidebar khi không mở trên mobile */
+  .sidebar-hidden {
+    display: none !important;
+  }
+  
+  /* Tối ưu mobile header - chỉ hiện nút hamburger */
+  .mobile-header {
+    padding: 0.75rem 1rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .mobile-header > div:last-child,
+  .mobile-header > div:nth-child(2) {
+    display: none !important;
+  }
+  
+  .mobile-header > button:first-child {
+    position: static !important;
+    margin: 0 !important;
+  }
+  
+  /* Fix GroupList header - ẩn hoàn toàn logo và title trên mobile */
+  .group-list-header .flex.items-center {
+    display: none !important;
+  }
+  
+  /* Căn giữa nút "Tạo nhóm" khi ẩn title */
+  .group-list-header {
+    justify-content: center !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  /* Tối ưu nút "Tạo nhóm" trên mobile */
+  .group-list-header button {
+    padding: 10px 20px !important;
+    font-size: 0.9rem !important;
+    border-radius: 25px !important;
+    min-height: 42px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  }
+  
+  /* Mobile title trong GroupList */
+  .mobile-title h1 {
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin: 0 !important;
+  }
+  
+  /* Fix spacing cho GroupList container */
+  .group-list-container {
+    padding: 1rem !important;
+  }
+  
+  /* Fix table trong GroupList */
+  .group-list-container .overflow-x-auto {
+    margin: 0 -1rem !important;
+    padding: 0 1rem !important;
+  }
+  
+  /* Tối ưu PostCard cho mobile */
+  .post-card {
+    margin-bottom: 0.75rem !important;
+  }
+  
+  /* Fix PostCard header layout - căn trái */
+  .post-card .justify-start {
+    justify-content: flex-start !important;
+  }
+  
+
+  
+  /* Tối ưu text trong PostCard */
+  .post-card .font-semibold {
+    font-size: 0.875rem !important;
+    line-height: 1.25 !important;
+  }
+  
+  .post-card .text-xs {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Tối ưu layout không có avatar */
+  .post-card .gap-2 {
+    gap: 0.5rem !important;
+  }
+  
+  /* Tối ưu tên doanh nghiệp - không cần giới hạn width */
+  .post-card .font-semibold.text-sm {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex-shrink: 1 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Tối ưu margin cho layout mới */
+  .post-card .mb-1 {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Tối ưu type badge */
+  .post-card .bg-blue-100 {
+    font-size: 0.7rem !important;
+    padding: 0.125rem 0.5rem !important;
+  }
+  
+  /* Ẩn avatar trên mobile */
+  .post-card .w-10.h-10 {
+    display: none !important;
+  }
+  
+  /* Đảm bảo tên doanh nghiệp không bị truncate không cần thiết */
+  .post-card .font-semibold.text-sm span,
+  .post-card .font-semibold.text-sm button {
+    display: inline !important;
+  }
+  
+  /* Tối ưu title và content */
+  .post-card h3 {
+    font-size: 1rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .post-card .text-gray-700 {
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Fix padding cho các section trong PostCard */
+  .post-card .px-4 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  .post-card .px-3 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  /* Container fixes */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  .container, .max-w-md, .max-w-lg, .max-w-xl {
+    max-width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Spacing adjustments */
+  .mb-6 { margin-bottom: 1rem !important; }
+  .mb-4 { margin-bottom: 0.75rem !important; }
+  .mt-6 { margin-top: 1rem !important; }
+  .mt-4 { margin-top: 0.75rem !important; }
+  
+  .py-6 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+  .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+  .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  
+  /* Grid and flex adjustments */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .flex {
+    flex-direction: column !important;
+  }
+  
+  .flex-row {
+    flex-direction: row !important;
+  }
+  
+  /* Hide elements on mobile */
+  .hidden-mobile {
+    display: none !important;
+  }
+  
+  /* Scrollable content */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
