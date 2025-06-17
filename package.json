@@ -12,7 +12,9 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "start:backend": "cd backend && npm start",
     "build:frontend": "cd frontend && npm run build",
-    "build": "npm run build:frontend",
+    "build:backend": "cd backend && npm install --production",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start": "cd backend && npm start",
     "start:production": "npm run build && cd backend && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
