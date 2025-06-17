@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS ENTERPRISES (
     enterprise_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
-    enterprise_type ENUM('cafe', 'restaurant', 'mall', 'cinema', 'library', 'other') NOT NULL,
+    enterprise_type ENUM('cafe', 'restaurant', 'mall', 'cinema', 'other') NOT NULL,
     contact_person VARCHAR(100),
     phone VARCHAR(20),
     address VARCHAR(255) NOT NULL,
@@ -67,9 +67,6 @@ CREATE TABLE IF NOT EXISTS ENTERPRISES (
     FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
     INDEX idx_enterprises_status (status)
 );
-select * from enterprises;
-alter table enterprises modify column enterprise_type ENUM('cafe', 'restaurant', 'mall', 'cinema', 'other') NOT NULL;
-select * from enterprises;
 
 -- Bảng POSTS - Quản lý bài đăng
 CREATE TABLE IF NOT EXISTS POSTS (
@@ -101,7 +98,7 @@ CREATE TABLE IF NOT EXISTS EVENTS (
 );
 
 -- Cập nhật sự kiện hiện tại để leader tự động tham gia (giả sử user_id = 1 là leader)
-UPDATE events SET participants = JSON_ARRAY(1) WHERE participants IS NULL; 
+UPDATE EVENTS SET participants = JSON_ARRAY(1) WHERE participants IS NULL; 
 
 -- Bảng EVENT_PARTICIPANTS - Quản lý người tham gia sự kiện
 CREATE TABLE IF NOT EXISTS EVENT_PARTICIPANTS (
@@ -168,12 +165,12 @@ CREATE TABLE IF NOT EXISTS TIMESLOTS (
     group_id INT NOT NULL,
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
-    --google_calendar_event_id VARCHAR(255),
+    -- google_calendar_event_id VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES `GROUPS`(group_id) ON DELETE CASCADE,
     INDEX idx_user_group (user_id, group_id)
 );
-select * from timeslots;
+
 -- Bảng PREFERENCES - Quản lý sở thích
 CREATE TABLE IF NOT EXISTS PREFERENCES (
     preference_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -222,25 +219,3 @@ CREATE TABLE IF NOT EXISTS GROUP_JOIN_REQUESTS (
     FOREIGN KEY (invite_id) REFERENCES GROUP_INVITES(invite_id) ON DELETE SET NULL,
     FOREIGN KEY (processed_by) REFERENCES USERS(user_id) ON DELETE SET NULL
 );
-
-select * from enterprises;
-select * from users;
-select * from bookings;
-
-select * from memberships
-join users on memberships.user_id = users.user_id
-where users.user_id = 27;
-
-select * from `groups`
-
--- lọc các thành viên của nhóm có id 35
-select * from memberships
-join users on memberships.user_id = users.user_id
-where memberships.group_id = 35;
-
-select * from `groups`
-join memberships on `groups`.group_id = memberships.group_id
-join users on memberships.user_id = users.user_id
-where users.user_id = 27;
-
-select * from `groups`
