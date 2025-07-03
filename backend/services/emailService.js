@@ -640,13 +640,13 @@ const createRegistrationConfirmationTemplate = (userData, groupData) => {
             <!-- Next Steps -->
             <div class="next-steps">
               <h3>Bước tiếp theo của bạn:</h3>
-              <ul>
+              <ol>
                 <li>Đăng nhập vào hệ thống bằng tài khoản đã tạo</li>
                 <li>Cập nhật thông tin cá nhân trong phần Hồ sơ</li>
                 <li>Tham gia các sự kiện do nhóm tổ chức</li>
                 <li>Kết nối với các thành viên khác trong nhóm</li>
                 <li>Theo dõi thông báo về các hoạt động mới</li>
-              </ul>
+              </ol>
             </div>
 
             <p style="color: #6b7280; font-size: 16px; margin-top: 32px;">
@@ -1252,6 +1252,178 @@ const sendGroupInvite = async (recipientEmail, groupName, inviteCode, inviterNam
   }
 };
 
+// Template email xác thực đăng ký
+const createEmailVerificationTemplate = (userData, verificationCode) => {
+  const currentDate = new Date().toLocaleDateString('vi-VN');
+  
+  return {
+    subject: `🔐 Mã xác thực email - ${process.env.EMAIL_SENDER_NAME || 'Hệ thống Quản lý Sự kiện'}`,
+    html: `
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Xác thực email đăng ký</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; }
+          .container { max-width: 680px; margin: 20px auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px 40px; text-align: center; }
+          .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+          .content { padding: 40px; }
+          .greeting { font-size: 16px; color: #374151; margin-bottom: 24px; }
+          .verification-code-section { background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px; padding: 32px; margin: 24px 0; text-align: center; }
+          .verification-code-title { font-size: 20px; font-weight: 600; color: #059669; margin-bottom: 16px; }
+          .verification-code { font-size: 36px; font-weight: 800; color: #059669; letter-spacing: 8px; background: white; padding: 16px 24px; border-radius: 8px; border: 2px dashed #059669; margin: 16px 0; font-family: 'Courier New', monospace; }
+          .info-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+          .info-table td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+          .info-table td:first-child { font-weight: 600; color: #374151; background: #f9fafb; width: 30%; }
+          .info-table td:last-child { color: #6b7280; }
+          .info-table tr:last-child td { border-bottom: none; }
+          .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+          .warning-title { font-weight: 600; color: #92400e; margin-bottom: 8px; }
+          .warning-content { color: #92400e; line-height: 1.5; }
+          .instructions { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .instructions-title { font-weight: 600; color: #0369a1; margin-bottom: 12px; }
+          .instructions-list { color: #0369a1; }
+          .instructions-list li { margin: 8px 0; }
+          .contact-info { background: #f8fafc; padding: 20px; border-radius: 6px; margin: 20px 0; text-align: center; }
+          .contact-info p { color: #6b7280; font-size: 14px; line-height: 1.5; margin: 4px 0; }
+          .footer { background: #1f2937; color: #9ca3af; padding: 24px 40px; text-align: center; font-size: 14px; line-height: 1.5; }
+          .footer p { margin: 4px 0; }
+          .footer .brand { color: white; font-weight: 600; }
+          @media (max-width: 600px) {
+            .container { margin: 10px; border-radius: 0; }
+            .header, .content, .footer { padding: 20px; }
+            .header h1 { font-size: 24px; }
+            .verification-code { font-size: 28px; letter-spacing: 4px; padding: 12px 16px; }
+            .info-table td { padding: 8px 12px; font-size: 13px; }
+            .info-table td:first-child { width: 40%; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <!-- Header -->
+          <div class="header">
+            <h1>🎉 Chào mừng bạn đến với hệ thống!</h1>
+            <p>Xác thực email để hoàn tất đăng ký</p>
+          </div>
+          
+          <!-- Content -->
+          <div class="content">
+            <div class="greeting">
+              Chào <strong>${userData.username}</strong>!
+            </div>
+            
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+              Cảm ơn bạn đã đăng ký tài khoản! Để hoàn tất quá trình đăng ký và kích hoạt tài khoản, vui lòng sử dụng mã xác thực bên dưới.
+            </p>
+
+            <!-- Verification Code Section -->
+            <div class="verification-code-section">
+              <div class="verification-code-title">Mã xác thực của bạn</div>
+              <div class="verification-code">${verificationCode}</div>
+              
+              <table class="info-table">
+                <tr>
+                  <td>Tài khoản:</td>
+                  <td><strong>${userData.username}</strong></td>
+                </tr>
+                <tr>
+                  <td>Email:</td>
+                  <td>${userData.email}</td>
+                </tr>
+                <tr>
+                  <td>Thời gian đăng ký:</td>
+                  <td>${currentDate}</td>
+                </tr>
+                <tr>
+                  <td>Hiệu lực:</td>
+                  <td><strong>15 phút</strong></td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions">
+              <div class="instructions-title">📋 Hướng dẫn xác thực:</div>
+              <ol class="instructions-list">
+                <li>Quay lại trang đăng ký trên website</li>
+                <li>Nhập mã xác thực <strong>${verificationCode}</strong> vào ô được yêu cầu</li>
+                <li>Nhấn "Xác thực email" để hoàn tất đăng ký</li>
+                <li>Bạn có thể đăng nhập ngay sau khi xác thực thành công</li>
+              </ol>
+            </div>
+
+            <div class="warning">
+              <div class="warning-title">⚠️ Lưu ý quan trọng:</div>
+              <div class="warning-content">
+                Mã xác thực này chỉ có hiệu lực trong <strong>15 phút</strong> kể từ thời điểm gửi email. Nếu mã hết hạn, bạn có thể yêu cầu gửi lại mã mới.
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="contact-info">
+              <p>Nếu bạn gặp vấn đề, vui lòng liên hệ support để được hỗ trợ.</p>
+            </div>
+
+            <p style="color: #6b7280; font-size: 16px; margin-top: 32px;">
+              Trân trọng,<br>
+              <strong style="color: #1f2937;">Đội ngũ hỗ trợ</strong>
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div class="footer">
+            <p>Đây là email tự động, vui lòng không trả lời trực tiếp.</p>
+            <p class="brand">© 2025 Hệ thống Quản lý Sự kiện. Bảo lưu mọi quyền.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  };
+};
+
+// Gửi email xác thực đăng ký
+const sendEmailVerification = async (userData, verificationCode) => {
+  try {
+    if (!userData.email) {
+      console.warn(`Người dùng ${userData.username} không có email`);
+      return { success: false, error: 'No email' };
+    }
+
+    const transporter = createTransporter();
+    const template = createEmailVerificationTemplate(userData, verificationCode);
+    
+    const mailOptions = {
+      from: `"${process.env.EMAIL_SENDER_NAME || 'Hệ thống Quản lý Sự kiện'}" <${process.env.EMAIL_USER || 'your-email@gmail.com'}>`,
+      to: userData.email,
+      subject: template.subject,
+      html: template.html
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email verification sent to ${userData.email}:`, result.messageId);
+    
+    return { 
+      success: true, 
+      email: userData.email, 
+      messageId: result.messageId 
+    };
+    
+  } catch (error) {
+    console.error(`❌ Failed to send email verification to ${userData.email}:`, error);
+    return { 
+      success: false, 
+      email: userData.email, 
+      error: error.message 
+    };
+  }
+};
+
 module.exports = {
   sendEventNotification,
   sendEventParticipationConfirmation,
@@ -1260,5 +1432,6 @@ module.exports = {
   testEmailConnection,
   sendGroupInvite,
   sendNewBookingNotification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification
 }; 

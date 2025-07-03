@@ -84,5 +84,44 @@ export const authService = {
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt lại mật khẩu');
     }
+  },
+
+  // Gửi mã xác thực email
+  sendEmailVerification: async (email, username) => {
+    try {
+      const response = await api.post('/users/send-email-verification', { 
+        email,
+        username 
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi mã xác thực email');
+    }
+  },
+
+  // Xác thực mã email
+  verifyEmailCode: async (email, verificationCode) => {
+    try {
+      const response = await api.post('/users/verify-email', { 
+        email,
+        verificationCode 
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Có lỗi xảy ra khi xác thực email');
+    }
+  },
+
+  // Gửi lại mã xác thực email
+  resendEmailVerification: async (email, username) => {
+    try {
+      const response = await api.post('/users/resend-email-verification', { 
+        email,
+        username 
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi lại mã xác thực');
+    }
   }
 };

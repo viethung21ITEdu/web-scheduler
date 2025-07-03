@@ -3,20 +3,20 @@ require('dotenv').config();
 
 module.exports = {
   // Server configuration
-  port: process.env.PORT,
+  port: process.env.PORT || 5000,
   
   // Database configuration
   db: {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    password: process.env.DB_PASSWORD || 'Nguyen21viet8hung5@$',
+    database: process.env.DB_NAME || 'web_scheduler',
+    port: process.env.DB_PORT || 3306
   },
   
   // JWT configuration
-  jwtSecret: process.env.JWT_SECRET,
-  jwtExpiration: process.env.JWT_EXPIRATION,
+  jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+  jwtExpiration: process.env.JWT_EXPIRATION || '24h',
   
   // CORS configuration
   corsOrigin: process.env.CORS_ORIGIN || [

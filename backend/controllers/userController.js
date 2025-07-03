@@ -4,7 +4,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const db = require('../utils/db');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendPasswordResetEmail, sendEmailVerification } = require('../services/emailService');
+const { validateUserInput, sanitizeInput } = require('../utils/validation');
 
 const SALT_ROUNDS = 10;
 
@@ -12,10 +13,55 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password, full_name, phone, role, enterprise_type } = req.body;
 
-    // Kiểm tra xem username hoặc email đã tồn tại chưa
+    // Kiểm tra xem username đã tồn tại chưa
     const existingUser = await User.getByUsername(username);
     if (existingUser) {
       return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const existingEmail = await User.getByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email này đã được sử dụng cho tài khoản khác' });
+    }
+
+    // Kiểm tra xác thực email (nếu có email)
+    if (email && email.trim()) {
+      if (!global.emailVerificationTokens || !global.emailVerificationTokens.has(email)) {
+        return res.status(400).json({ 
+          message: 'Email chưa được xác thực. Vui lòng xác thực email trước khi đăng ký.',
+          requireEmailVerification: true
+        });
+      }
+
+      const verificationData = global.emailVerificationTokens.get(email);
+      
+      // Kiểm tra token hết hạn
+      if (Date.now() > verificationData.expires) {
+        global.emailVerificationTokens.delete(email);
+        return res.status(400).json({ 
+          message: 'Mã xác thực email đã hết hạn. Vui lòng yêu cầu mã mới.',
+          requireEmailVerification: true
+        });
+      }
+
+      // Verify JWT token để đảm bảo tính toàn vẹn
+      try {
+        const decoded = jwt.verify(verificationData.token, config.jwtSecret);
+        if (decoded.purpose !== 'email_verification' || decoded.email !== email) {
+          global.emailVerificationTokens.delete(email);
+          return res.status(400).json({ 
+            message: 'Xác thực email không hợp lệ. Vui lòng thực hiện lại.',
+            requireEmailVerification: true
+          });
+        }
+      } catch (error) {
+        global.emailVerificationTokens.delete(email);
+        return res.status(400).json({ 
+          message: 'Xác thực email không hợp lệ. Vui lòng thực hiện lại.',
+          requireEmailVerification: true
+        });
+      }
     }
 
     // Mã hóa mật khẩu
@@ -33,6 +79,11 @@ exports.register = async (req, res) => {
     };
 
     const userId = await User.create(userData);
+    
+    // Xóa token xác thực email sau khi tạo tài khoản thành công
+    if (email && email.trim() && global.emailVerificationTokens && global.emailVerificationTokens.has(email)) {
+      global.emailVerificationTokens.delete(email);
+    }
     
     // Nếu là Enterprise, tạo record trong bảng ENTERPRISES
     if (role === 'Enterprise' && enterprise_type) {
@@ -610,5 +661,203 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Lỗi reset mật khẩu:', error);
     res.status(500).json({ message: 'Đã xảy ra lỗi khi đặt lại mật khẩu' });
+  }
+};
+
+// Gửi mã xác thực email cho đăng ký
+exports.sendEmailVerification = async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ message: 'Email và username là bắt buộc' });
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const [existingUsers] = await db.query('SELECT * FROM USERS WHERE email = ?', [email]);
+    
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: 'Email này đã được sử dụng cho tài khoản khác' });
+    }
+
+    // Tạo mã xác thực 6 chữ số
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Tạo JWT token chứa mã xác thực (hết hạn sau 15 phút)
+    const verificationToken = jwt.sign(
+      { 
+        email: email,
+        username: username,
+        verification_code: verificationCode,
+        purpose: 'email_verification'
+      },
+      config.jwtSecret,
+      { expiresIn: '15m' }
+    );
+
+    // Lưu token vào memory cache (production nên dùng Redis)
+    if (!global.emailVerificationTokens) {
+      global.emailVerificationTokens = new Map();
+    }
+    global.emailVerificationTokens.set(email, {
+      token: verificationToken,
+      code: verificationCode,
+      username: username,
+      expires: Date.now() + 15 * 60 * 1000 // 15 phút
+    });
+
+    // Gửi email với mã xác thực
+    const userData = { email, username };
+    const emailResult = await sendEmailVerification(userData, verificationCode);
+
+    if (emailResult.success) {
+      res.status(200).json({ 
+        message: 'Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư và nhập mã để hoàn tất đăng ký.',
+        email: email
+      });
+    } else {
+      res.status(500).json({ 
+        message: 'Có lỗi xảy ra khi gửi email xác thực. Vui lòng thử lại sau.' 
+      });
+    }
+
+  } catch (error) {
+    console.error('Lỗi gửi mã xác thực email:', error);
+    res.status(500).json({ message: 'Đã xảy ra lỗi khi gửi mã xác thực' });
+  }
+};
+
+// Xác thực mã email verification
+exports.verifyEmailCode = async (req, res) => {
+  try {
+    const { email, verificationCode } = req.body;
+
+    if (!email || !verificationCode) {
+      return res.status(400).json({ message: 'Email và mã xác thực là bắt buộc' });
+    }
+
+    // Kiểm tra mã xác thực từ memory cache
+    if (!global.emailVerificationTokens || !global.emailVerificationTokens.has(email)) {
+      return res.status(400).json({ message: 'Mã xác thực không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    const verificationData = global.emailVerificationTokens.get(email);
+    
+    // Kiểm tra hết hạn
+    if (Date.now() > verificationData.expires) {
+      global.emailVerificationTokens.delete(email);
+      return res.status(400).json({ message: 'Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.' });
+    }
+
+    // Kiểm tra mã xác thực
+    if (verificationData.code !== verificationCode) {
+      return res.status(400).json({ message: 'Mã xác thực không chính xác.' });
+    }
+
+    // Verify JWT token để đảm bảo tính toàn vẹn
+    let decoded;
+    try {
+      decoded = jwt.verify(verificationData.token, config.jwtSecret);
+    } catch (error) {
+      global.emailVerificationTokens.delete(email);
+      return res.status(400).json({ message: 'Mã xác thực không hợp lệ.' });
+    }
+
+    // Kiểm tra purpose và email
+    if (decoded.purpose !== 'email_verification' || decoded.email !== email) {
+      global.emailVerificationTokens.delete(email);
+      return res.status(400).json({ message: 'Mã xác thực không hợp lệ.' });
+    }
+
+    // Kiểm tra email vẫn chưa được sử dụng
+    const [existingUsers] = await db.query('SELECT * FROM USERS WHERE email = ?', [email]);
+    
+    if (existingUsers.length > 0) {
+      global.emailVerificationTokens.delete(email);
+      return res.status(400).json({ message: 'Email này đã được sử dụng cho tài khoản khác.' });
+    }
+
+    // Trả về thông tin để frontend có thể tiếp tục tạo tài khoản
+    res.status(200).json({ 
+      message: 'Email đã được xác thực thành công. Bạn có thể tiếp tục hoàn tất đăng ký.',
+      verified: true,
+      email: email,
+      username: decoded.username
+    });
+
+    // Không xóa token ngay, để có thể sử dụng trong quá trình tạo tài khoản
+    // Token sẽ được xóa khi tạo tài khoản thành công hoặc hết hạn
+
+  } catch (error) {
+    console.error('Lỗi xác thực email:', error);
+    res.status(500).json({ message: 'Đã xảy ra lỗi khi xác thực email' });
+  }
+};
+
+// Gửi lại mã xác thực email
+exports.resendEmailVerification = async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ message: 'Email và username là bắt buộc' });
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const [existingUsers] = await db.query('SELECT * FROM USERS WHERE email = ?', [email]);
+    
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: 'Email này đã được sử dụng cho tài khoản khác' });
+    }
+
+    // Xóa token cũ nếu có
+    if (global.emailVerificationTokens && global.emailVerificationTokens.has(email)) {
+      global.emailVerificationTokens.delete(email);
+    }
+
+    // Tạo mã xác thực mới
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Tạo JWT token mới
+    const verificationToken = jwt.sign(
+      { 
+        email: email,
+        username: username,
+        verification_code: verificationCode,
+        purpose: 'email_verification'
+      },
+      config.jwtSecret,
+      { expiresIn: '15m' }
+    );
+
+    // Lưu token mới vào memory cache
+    if (!global.emailVerificationTokens) {
+      global.emailVerificationTokens = new Map();
+    }
+    global.emailVerificationTokens.set(email, {
+      token: verificationToken,
+      code: verificationCode,
+      username: username,
+      expires: Date.now() + 15 * 60 * 1000 // 15 phút
+    });
+
+    // Gửi email với mã xác thực mới
+    const userData = { email, username };
+    const emailResult = await sendEmailVerification(userData, verificationCode);
+
+    if (emailResult.success) {
+      res.status(200).json({ 
+        message: 'Mã xác thực mới đã được gửi đến email của bạn.',
+        email: email
+      });
+    } else {
+      res.status(500).json({ 
+        message: 'Có lỗi xảy ra khi gửi email xác thực. Vui lòng thử lại sau.' 
+      });
+    }
+
+  } catch (error) {
+    console.error('Lỗi gửi lại mã xác thực:', error);
+    res.status(500).json({ message: 'Đã xảy ra lỗi khi gửi lại mã xác thực' });
   }
 }; 

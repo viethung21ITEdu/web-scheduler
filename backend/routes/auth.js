@@ -1,6 +1,7 @@
 const express = require('express');
 const passport = require('../middlewares/passport');
 const jwt = require('jsonwebtoken');
+const { validateUserInput } = require('../utils/validation');
 const router = express.Router();
 
 // Route để bắt đầu Google OAuth flow

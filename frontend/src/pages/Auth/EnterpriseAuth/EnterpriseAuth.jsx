@@ -5,11 +5,13 @@ import Input from '../../../components/common/Input';
 import { RoundButton } from '../../../components/common/Button';
 import GoogleLoginButton from '../../../components/common/GoogleLoginButton';
 import { authService } from '../../../services/authService';
+import { validateEnterpriseName, validateEmail, validatePhone, validatePassword } from '../../../utils/validation';
 
 const EnterpriseAuth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState('register'); // 'register' | 'verify-email' | 'success'
   const [formData, setFormData] = useState({
     enterprise_name: '',
     login_identifier: '', // Thay đổi tên field cho đăng nhập
@@ -19,9 +21,11 @@ const EnterpriseAuth = () => {
     enterprise_type: '',
     confirmPassword: ''
   });
+  const [verificationCode, setVerificationCode] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [linkMessage, setLinkMessage] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
 
   // Xử lý thông báo từ URL params
   useEffect(() => {
@@ -50,6 +54,16 @@ const EnterpriseAuth = () => {
     }
   };
 
+  const handleVerificationCodeChange = (e) => {
+    setVerificationCode(e.target.value);
+    if (errors.verificationCode) {
+      setErrors({
+        ...errors,
+        verificationCode: ''
+      });
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     
@@ -58,32 +72,34 @@ const EnterpriseAuth = () => {
         newErrors.login_identifier = 'Tên đăng nhập hoặc email là bắt buộc';
       }
     } else {
-      if (!formData.enterprise_name.trim()) {
-        newErrors.enterprise_name = 'Tên doanh nghiệp là bắt buộc';
+      // Kiểm tra tên doanh nghiệp với validation mới
+      const enterpriseNameError = validateEnterpriseName(formData.enterprise_name);
+      if (enterpriseNameError) {
+        newErrors.enterprise_name = enterpriseNameError;
       }
     }
     
-    if (!formData.password.trim()) {
-      newErrors.password = 'Mật khẩu là bắt buộc';
+    // Kiểm tra mật khẩu với validation mới
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     if (!isLogin) {
-      if (!formData.email.trim()) {
-        newErrors.email = 'Email là bắt buộc';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email không hợp lệ';
+      // Kiểm tra email với validation mới
+      const emailError = validateEmail(formData.email);
+      if (emailError) {
+        newErrors.email = emailError;
       }
 
-      if (!formData.phone.trim()) {
-        newErrors.phone = 'Số điện thoại là bắt buộc';
+      // Kiểm tra số điện thoại với validation mới
+      const phoneError = validatePhone(formData.phone);
+      if (phoneError) {
+        newErrors.phone = phoneError;
       }
 
       if (!formData.enterprise_type) {
         newErrors.enterprise_type = 'Loại doanh nghiệp là bắt buộc';
-      }
-
-      if (formData.password.length < 6) {
-        newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
       }
 
       if (formData.password !== formData.confirmPassword) {
@@ -123,29 +139,15 @@ const EnterpriseAuth = () => {
         localStorage.setItem('user', JSON.stringify(response.user));
         navigate('/enterprise/dashboard');
       } else {
-        // Đăng ký
-        const signupData = {
-          username: formData.enterprise_name,
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.enterprise_name,
-          phone: formData.phone,
-          enterprise_type: formData.enterprise_type,
-          role: 'Enterprise'
-        };
-
-        await authService.signup(signupData);
-        alert('Đăng ký thành công! Tài khoản doanh nghiệp của bạn đang chờ duyệt từ quản trị viên. Quá trình này có thể mất 1 ngày làm việc.');
-        setIsLogin(true);
-        setFormData({
-          enterprise_name: '',
-          login_identifier: '',
-          email: '',
-          password: '',
-          phone: '',
-          enterprise_type: '',
-          confirmPassword: ''
-        });
+        // Đăng ký doanh nghiệp - Bước 1: Gửi mã xác thực email
+        if (formData.email && formData.email.trim()) {
+          await authService.sendEmailVerification(formData.email, formData.enterprise_name);
+          setStep('verify-email');
+          setErrors({});
+        } else {
+          // Nếu không có email, đăng ký trực tiếp (không khuyến khích)
+          await registerEnterprise();
+        }
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -170,8 +172,78 @@ const EnterpriseAuth = () => {
     }
   };
 
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+    
+    if (!verificationCode.trim()) {
+      setErrors({ verificationCode: 'Vui lòng nhập mã xác thực' });
+      return;
+    }
+
+    if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
+      setErrors({ verificationCode: 'Mã xác thực phải có 6 chữ số' });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      await authService.verifyEmailCode(formData.email, verificationCode);
+      setEmailVerified(true);
+      await registerEnterprise();
+    } catch (error) {
+      setErrors({
+        verificationCode: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerEnterprise = async () => {
+    try {
+      const signupData = {
+        username: formData.enterprise_name,
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.enterprise_name,
+        phone: formData.phone,
+        enterprise_type: formData.enterprise_type,
+        role: 'Enterprise'
+      };
+
+      await authService.register(signupData);
+      setStep('success');
+    } catch (error) {
+      // Nếu lỗi yêu cầu xác thực email, chuyển về step verify
+      if (error.message.includes('Email chưa được xác thực') || 
+          error.message.includes('requireEmailVerification')) {
+        setStep('verify-email');
+        setErrors({ submit: error.message });
+      } else {
+        setErrors({ submit: error.message });
+      }
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    try {
+      await authService.resendEmailVerification(formData.email, formData.enterprise_name);
+      alert('Mã xác thực mới đã được gửi đến email của bạn.');
+      setErrors({});
+    } catch (error) {
+      setErrors({
+        resend: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     setIsLogin(!isLogin);
+    setStep('register');
     setFormData({
       enterprise_name: '',
       login_identifier: '',
@@ -181,8 +253,157 @@ const EnterpriseAuth = () => {
       enterprise_type: '',
       confirmPassword: ''
     });
+    setVerificationCode('');
     setErrors({});
+    setEmailVerified(false);
   };
+
+  // Success screen
+  if (!isLogin && step === 'success') {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="absolute top-8 left-8 hidden md:block">
+          <Link to="/">
+            <Logo size="default" />
+          </Link>
+        </div>
+        
+        <div className="flex-grow flex items-center justify-center px-4 py-8">
+          <div className="bg-white p-6 md:p-10 rounded-xl shadow-2xl border border-gray-100 w-full max-w-md">
+            <div className="text-center">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Đăng ký thành công!</h1>
+                <p className="text-gray-600">
+                  Tài khoản doanh nghiệp đã được tạo thành công. Email đã được xác thực.
+                  <br />
+                  <strong>Tài khoản đang chờ duyệt từ quản trị viên.</strong>
+                </p>
+              </div>
+              
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Lưu ý:</strong> Quá trình duyệt có thể mất 1 ngày làm việc. 
+                  Bạn sẽ nhận được thông báo qua email khi tài khoản được kích hoạt.
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <RoundButton 
+                  onClick={() => {
+                    setIsLogin(true);
+                    setStep('register');
+                  }}
+                  variant="primary-light" 
+                  size="lg"
+                  className="w-full"
+                >
+                  Đăng nhập
+                </RoundButton>
+              </div>
+              
+              <Link
+                to="/"
+                className="text-primary hover:underline hover:text-primary-dark transition-all duration-200 font-medium"
+              >
+                ← Về trang chủ
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Email verification screen
+  if (!isLogin && step === 'verify-email') {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="absolute top-8 left-8 hidden md:block">
+          <Link to="/">
+            <Logo size="default" />
+          </Link>
+        </div>
+        
+        <div className="flex-grow flex items-center justify-center px-4 py-8">
+          <div className="bg-white p-6 md:p-10 rounded-xl shadow-2xl border border-gray-100 w-full max-w-md">
+            <h1 className="text-xl md:text-2xl font-bold text-center mb-6">XÁC THỰC EMAIL DOANH NGHIỆP</h1>
+            
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm text-center">
+                Chúng tôi đã gửi mã xác thực 6 chữ số đến email <strong>{formData.email}</strong>. 
+                Vui lòng kiểm tra hộp thư và nhập mã bên dưới.
+              </p>
+            </div>
+            
+            <form onSubmit={handleVerifyEmail}>
+              <div className="mb-6">
+                <label className="block text-gray-700 mb-2 text-sm md:text-base">Mã xác thực</label>
+                <Input
+                  type="text"
+                  value={verificationCode}
+                  onChange={handleVerificationCodeChange}
+                  placeholder="Nhập mã 6 chữ số"
+                  error={errors.verificationCode}
+                  disabled={loading}
+                  maxLength={6}
+                  className="text-center text-lg font-mono tracking-widest"
+                />
+              </div>
+
+              {errors.submit && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                  {errors.submit}
+                </div>
+              )}
+
+              {errors.resend && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                  {errors.resend}
+                </div>
+              )}
+
+              <div className="mb-6 flex justify-center">
+                <RoundButton 
+                  type="submit"
+                  variant="primary-light" 
+                  size="lg"
+                  disabled={loading}
+                  className="w-full md:w-auto"
+                >
+                  {loading ? 'Đang xác thực...' : 'Xác thực email'}
+                </RoundButton>
+              </div>
+            </form>
+
+            <div className="text-center">
+              <p className="text-gray-600 text-sm mb-2">
+                Không nhận được mã?{' '}
+                <button
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="text-primary hover:underline font-medium disabled:opacity-50"
+                >
+                  Gửi lại
+                </button>
+              </p>
+              
+              <button
+                onClick={() => setStep('register')}
+                className="text-primary hover:underline hover:text-primary-dark transition-all duration-200 font-medium"
+              >
+                ← Quay lại đăng ký
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">

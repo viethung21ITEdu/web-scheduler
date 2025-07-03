@@ -2,12 +2,18 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middlewares/authMiddleware');
+const { validateUserInput } = require('../utils/validation');
 
 // Route đăng ký và đăng nhập
-router.post('/register', userController.register);
+router.post('/register', validateUserInput, userController.register);
 router.post('/login', userController.login);
 router.post('/forgot-password', userController.forgotPassword);
 router.post('/reset-password', userController.resetPassword);
+
+// Email verification routes
+router.post('/send-email-verification', userController.sendEmailVerification);
+router.post('/verify-email', userController.verifyEmailCode);
+router.post('/resend-email-verification', userController.resendEmailVerification);
 
 // Routes yêu cầu xác thực
 router.get('/', authMiddleware.verifyToken, authMiddleware.isAdmin, userController.getAllUsers);

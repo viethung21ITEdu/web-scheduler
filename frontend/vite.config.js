@@ -4,24 +4,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          ui: ['@mui/x-date-pickers'],
-          maps: ['leaflet', 'react-leaflet'],
-          icons: ['react-icons'],
-          utils: ['axios', 'date-fns', 'prop-types']
-        }
-      }
-    }
-  },
   server: {
     port: 5173,
     host: true, // Cho phép truy cập từ bên ngoài
@@ -37,5 +19,19 @@ export default defineConfig({
         secure: false
       }
     }
+  },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          icons: ['react-icons'],
+          ui: ['@mui/x-date-pickers', 'leaflet', 'react-leaflet']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   }
 })
